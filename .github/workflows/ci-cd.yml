@@ -1,4 +1,4 @@
-name: CI/CD — Docker Hub to EC2
+ name: CI/CD — Docker Hub to EC2
 
 on:
   push:
@@ -47,24 +47,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Start SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@65.2.111.114 << 'EOF'
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
             set -e
-
             cd /home/ubuntu/simple-ci-cd-deploy
-
             echo "TAG=sha-${GITHUB_SHA}" > .env
-
             docker-compose pull
             docker-compose up -d --remove-orphans
-
             docker image prune -af || true
-          EOF
-        env:
-          GITHUB_SHA: ${{ github.sha }}
+          envs: GITHUB_SHA
